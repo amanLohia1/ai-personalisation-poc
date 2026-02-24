@@ -20,7 +20,7 @@ Cross-entity references (to People / Site, already ingested)
 ------------------------------------------------------------
 - createdbyid        → People.id
 - file_site_mapping  → [Site.id, ...]   (list — one :File may map to N sites)
-- file_content_mappings → [Content.id, ...] (union of file_content_mapping + file_content_id)
+- file_content_mappings → [Content.id, ...] (union of file_content_id + file_content_mapping[*].id)
 
 Fields intentionally ignored
 -----------------------------
@@ -98,6 +98,23 @@ def clean_id_list(values):
     return cleaned
 
 
+def clean_content_mapping_ids(values):
+    """Extract clean content IDs from raw file_content_mapping list[object]."""
+    if not isinstance(values, list):
+        return []
+
+    cleaned = []
+    for value in values:
+        if not isinstance(value, dict):
+            continue
+
+        content_id = clean_string(value.get("id"))
+        if content_id:
+            cleaned.append(content_id)
+
+    return cleaned
+
+
 def build_content_mappings(file_content_id, file_content_mapping):
     """Build sorted unique list of content IDs from scalar + list fields."""
     combined = []
@@ -106,7 +123,7 @@ def build_content_mappings(file_content_id, file_content_mapping):
     if scalar_id:
         combined.append(scalar_id)
 
-    combined.extend(clean_id_list(file_content_mapping))
+    combined.extend(clean_content_mapping_ids(file_content_mapping))
 
     seen = set()
     unique = []
